@@ -7,9 +7,9 @@ pub const LOG_FILENAME: &str = "faena_etiquetas.log";
 pub const LOG_FOLDER: &str = "/faena_etiquetas/logs";
 
 // Sizes
-pub const BUTTON_FONT_SIZE: f32 = 86.0;
-pub const BUTTON_HEIGHT: f32 = 256.0;
-pub const BUTTON_WIDTH: f32 = 512.0;
+pub const BUTTON_FONT_SIZE: f32 = 64.0;
+pub const BUTTON_HEIGHT: f32 = 212.0;
+pub const BUTTON_WIDTH: f32 = 381.0;
 pub const GRID_SPACE: f32 = 32.0;
 pub const ICON_SIZE: f32 = 64.0;
 pub const MODAL_WIDTH: f32 = 512.0;

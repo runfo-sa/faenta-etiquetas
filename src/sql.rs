@@ -28,7 +28,7 @@ impl SQL {
         config.authentication(tiberius::AuthMethod::Integrated);
 
         // SQL Server IP
-        config.host("rafatest");
+        config.host("##<INSERRTAR IP>##");
 
         // Especificamos la base de datos para limitar su alcance en el servidor
         config.database("AuxiliarFaena");

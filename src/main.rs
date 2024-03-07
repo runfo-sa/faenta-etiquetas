@@ -27,7 +27,7 @@ fn main() -> eframe::Result<()> {
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
-            .with_min_inner_size([1632.0, 664.0])
+            //.with_min_inner_size([1280.0, 720.0])
             .with_icon(
                 eframe::icon_data::from_png_bytes(&include_bytes!("../assets/icon-256.png")[..])
                     .unwrap(),
@@ -38,7 +38,14 @@ fn main() -> eframe::Result<()> {
     let app_rc = eframe::run_native(
         "etiquetas faena",
         native_options,
-        Box::new(|cc| Box::new(async_std::task::block_on(App::new(cc)))),
+        Box::new(|cc| {
+            let style = egui::Style {
+                visuals: egui::Visuals::dark(),
+                ..egui::Style::default()
+            };
+            cc.egui_ctx.set_style(style);
+            Box::new(async_std::task::block_on(App::new(cc)))
+        }),
     );
 
     clean_logs();
