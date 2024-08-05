@@ -13,27 +13,19 @@ GO
 SET QUOTED_IDENTIFIER ON
 GO
 
+CREATE TABLE [cambiarEtiquetas].[FaenaEtiquetas] (
+    [id]       TINYINT       IDENTITY (1, 1) NOT NULL,
+    [enable]   BIT           NOT NULL,
+    [etiqueta] VARCHAR (200) NOT NULL,
+    [label]    VARCHAR (16)  NOT NULL,
+    [color]    VARCHAR (7)   NOT NULL,
+    [dpi300]   BIT           CONSTRAINT [DEFAULT_FaenaEtiquetas_300dpi] DEFAULT ((1)) NOT NULL,
+    CONSTRAINT [PK_FaenaEtiquetas] PRIMARY KEY CLUSTERED ([id] ASC)
+);
 
-CREATE TABLE [cambiarEtiquetas].[FaenaEtiquetas](
-	[id] [tinyint] IDENTITY(1,1) NOT NULL,
-	[enable] [bit] NOT NULL,
-	[etiqueta] [varchar](200) NOT NULL,
-	[label] [varchar](16) NOT NULL,
-	[color] [varchar](7) NOT NULL,
-    CONSTRAINT [PK_FaenaEtiquetas] PRIMARY KEY CLUSTERED 
-    ([id] ASC)
-    WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
-) ON [PRIMARY]
 GO
-
-SET ANSI_PADDING ON
-GO
-
-CREATE UNIQUE NONCLUSTERED INDEX [IX_Unique_FaenaEtiquetas] ON [cambiarEtiquetas].[FaenaEtiquetas]
-([etiqueta] ASC) 
-WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, SORT_IN_TEMPDB = OFF, IGNORE_DUP_KEY = OFF, DROP_EXISTING = OFF, ONLINE = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) 
-ON [PRIMARY]
-GO
+CREATE UNIQUE NONCLUSTERED INDEX [IX_Unique_FaenaEtiquetas]
+    ON [cambiarEtiquetas].[FaenaEtiquetas]([etiqueta] ASC);
 
 
 INSERT INTO [cambiarEtiquetas].[FaenaEtiquetas]
