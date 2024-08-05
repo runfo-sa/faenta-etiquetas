@@ -44,7 +44,7 @@ fn main() -> eframe::Result<()> {
                 ..egui::Style::default()
             };
             cc.egui_ctx.set_style(style);
-            Box::new(async_std::task::block_on(App::new(cc)))
+            Ok(Box::new(async_std::task::block_on(App::new(cc))))
         }),
     );
 

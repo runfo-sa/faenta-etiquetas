@@ -17,6 +17,7 @@ pub struct Etiquetas {
     pub etiqueta: String,
     pub label: String,
     pub color: String,
+    pub dpi300: bool,
 }
 
 impl SQL {
@@ -28,7 +29,7 @@ impl SQL {
         config.authentication(tiberius::AuthMethod::Integrated);
 
         // SQL Server IP
-        config.host("##<INSERRTAR IP>##");
+        config.host("rafatest");
 
         // Especificamos la base de datos para limitar su alcance en el servidor
         config.database("AuxiliarFaena");
@@ -55,14 +56,16 @@ impl SQL {
     }
 
     /// Obtiene la tabla intermedia de etiquetas
-    pub async fn query_table(&mut self) -> anyhow::Result<Vec<Etiquetas>> {
-        let select = Query::new("SELECT * FROM [cambiarEtiquetas].[FaenaEtiquetas]");
+    pub async fn query_table(&mut self, is_dpi300: bool) -> anyhow::Result<Vec<Etiquetas>> {
+        let mut select =
+            Query::new("SELECT * FROM [cambiarEtiquetas].[FaenaEtiquetas] WHERE [dpi300] = @P1");
+        select.bind(is_dpi300);
 
         let stream = select.query(&mut self.client).await?;
         let rows = stream.into_results().await?;
 
         Ok(rows
-            .get(0)
+            .first()
             .context("La query a la tabla 'FaenaEtiquetas' esta vacia.")?
             .iter()
             .map(|row| Etiquetas {
@@ -80,6 +83,7 @@ impl SQL {
                     .get::<&str, &str>("color")
                     .expect("Columna 'color' no encontrada.")
                     .to_string(),
+                dpi300: row.get("dpi300").expect("Columna 'dpi300' no encontrada."),
             })
             .collect())
     }
@@ -108,7 +112,7 @@ async fn test_sql_connection_and_query_table() {
     let result = SQL::new_connection().await;
     assert!(result.is_ok());
 
-    let result = result.unwrap().query_table().await;
+    let result = result.unwrap().query_table(true).await;
     assert!(result.is_ok());
 }
 

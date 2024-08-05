@@ -1,4 +1,7 @@
+mod toggle_switch;
+
 use crate::{
+    config::Config,
     constants,
     sql::{Etiquetas, SQL},
 };
@@ -10,6 +13,7 @@ use std::{
     thread::JoinHandle,
 };
 use tiberius::{ExecuteResult, Result};
+use toggle_switch::toggle;
 use tracing::error;
 
 /// Posibles estados de la aplicación
@@ -35,14 +39,18 @@ pub struct App {
     sql_client: Option<Arc<Mutex<SQL>>>,
     /// Hilo secundario para ejecutar las llamadas al servidor
     handler: Option<JoinHandle<Result<ExecuteResult>>>,
+    /// Configuraciones del programa
+    config: Config,
 }
 
 impl App {
     pub async fn new(_cc: &eframe::CreationContext<'_>) -> Self {
+        let config: Config = confy::load("faena_etiquetas", "config")
+            .expect("No se pudo generar el archivo de configuracion.");
         let sql_client = SQL::new_connection().await;
 
         if let Ok(mut sql) = sql_client {
-            let (table, enables_count) = App::update_table(&mut sql).await;
+            let (table, enables_count) = App::update_table(&mut sql, config.is_dpi300).await;
             let faena_ids = sql.query_ids().await;
 
             Self {
@@ -57,6 +65,7 @@ impl App {
                 } else {
                     faena_ids.unwrap()
                 },
+                config,
             }
         } else {
             let err = sql_client.as_ref().err().unwrap();
@@ -69,12 +78,13 @@ impl App {
                 table: None,
                 sql_client: None,
                 handler: None,
+                config,
             }
         }
     }
 
-    async fn update_table(sql_client: &mut SQL) -> (Option<Vec<Etiquetas>>, u8) {
-        let table = sql_client.query_table().await;
+    async fn update_table(sql_client: &mut SQL, is_300dpi: bool) -> (Option<Vec<Etiquetas>>, u8) {
+        let table = sql_client.query_table(is_300dpi).await;
         if let Err(err) = table.as_ref() {
             error!("On sql::query_table: {err}");
             return (None, 0);
@@ -153,6 +163,15 @@ impl App {
                 }
             });
     }
+
+    fn refresh_table(&mut self) {
+        if let Some(sql) = &mut self.sql_client {
+            (self.table, self.enables_count) = block_on(App::update_table(
+                sql.clone().lock().as_mut().unwrap(),
+                self.config.is_dpi300,
+            ))
+        }
+    }
 }
 
 impl eframe::App for App {
@@ -164,10 +183,7 @@ impl eframe::App for App {
             if let Err(err) = rc {
                 if err.code().is_some_and(|code| code == constants::WARN_CODE) {
                     // Actualizamos la tabla intermedia
-                    if let Some(sql) = &mut self.sql_client {
-                        (self.table, self.enables_count) =
-                            block_on(App::update_table(sql.clone().lock().as_mut().unwrap()))
-                    }
+                    self.refresh_table();
                     self.status = AppStatus::Warn
                 } else {
                     self.status = AppStatus::Error;
@@ -175,10 +191,7 @@ impl eframe::App for App {
                 }
             } else {
                 // Actualizamos la tabla intermedia
-                if let Some(sql) = &mut self.sql_client {
-                    (self.table, self.enables_count) =
-                        block_on(App::update_table(sql.clone().lock().as_mut().unwrap()))
-                }
+                self.refresh_table();
                 self.status = AppStatus::Ok
             }
         }
@@ -202,10 +215,7 @@ impl eframe::App for App {
 
                 if ui.add(egui::Button::new("⟳")).clicked() {
                     // Actualizamos la tabla intermedia
-                    if let Some(sql) = &mut self.sql_client {
-                        (self.table, self.enables_count) =
-                            block_on(App::update_table(sql.clone().lock().as_mut().unwrap()))
-                    }
+                    self.refresh_table()
                 }
             });
 
@@ -218,6 +228,22 @@ impl eframe::App for App {
                 )
                 .text("(Debug!) Etiquetas"),
             );
+
+            // Dpi switch
+            ui.horizontal(|ui| {
+                if ui.add(toggle(&mut self.config.is_dpi300)).changed() {
+                    self.refresh_table();
+                    if let Err(error) = confy::store("faena_etiquetas", "config", &self.config) {
+                        error!("No se pudo guardar la configuracion debido a: {:#?}", error)
+                    }
+                }
+                ui.heading(if self.config.is_dpi300 {
+                    "300 dpi"
+                } else {
+                    "203 dpi"
+                })
+                .highlight();
+            });
 
             // Espaciado vertical inteligente.
             ui.add_space(
